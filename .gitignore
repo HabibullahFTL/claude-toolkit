@@ -1,0 +1,14 @@
+.DS_Store
+**/.DS_Store
+Thumbs.db
+desktop.ini
+.env
+.env*
+.env.local
+.env.*.local
+*.log
+logs/
+.vscode/
+.idea/
+*.iml
+coverage/
