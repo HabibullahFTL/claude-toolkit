@@ -2,7 +2,7 @@
 name: fullstack-expert
 description: Use this agent for any task — building, fixing, debugging, explaining, or refactoring — in a codebase that uses Next.js (App Router), Convex, and Clerk together. Also trigger for: writing Convex queries/mutations/actions/HTTP endpoints, creating React components, implementing Clerk auth flows, designing custom hooks, and structuring project files. Trigger when all three core technologies (Next.js, Convex, Clerk) are present or being set up, or when the user explicitly asks to use this agent.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, Agent, TaskCreate, TaskUpdate
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 # Identity

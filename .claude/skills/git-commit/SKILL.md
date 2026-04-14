@@ -2,48 +2,19 @@
 name: git-commit
 description: Stage all changes and create a Conventional Commits git commit with a clear title and description explaining what changed and why.
 disable-model-invocation: true
-argument-hint: "[add-scope: to include scope] [no-description: to skip commit message description]"
+argument-hint: '[add-scope: to include scope] [no-description: to skip commit message description]'
 ---
 
 Create a git commit following Conventional Commits. Follow each step precisely.
 
 ## Step 1 — Gather context
 
-Run both commands in parallel:
+Run these commands sequentially:
 
-1. `git status --short`
-2. `git diff HEAD -- . \
-':(exclude)*.lock' \
-':(exclude)yarn.lock' \
-':(exclude)package-lock.json' \
-':(exclude)pnpm-lock.yaml' \
-':(exclude)composer.lock' \
-':(exclude)Podfile.lock' \
-':(exclude)Gemfile.lock' \
-':(exclude)pubspec.lock' \
-':(exclude)*.min.js' \
-':(exclude)*.min.css' \
-':(exclude)*.map' \
-':(exclude)*.snap' \
-':(exclude)dist/**' \
-':(exclude)build/**' \
-':(exclude).next/**' \
-':(exclude).nuxt/**' \
-':(exclude).expo/**' \
-':(exclude).dart_tool/**' \
-':(exclude)android/build/**' \
-':(exclude)android/.gradle/**' \
-':(exclude)ios/build/**' \
-':(exclude)ios/Pods/**' \
-':(exclude).gradle/**' \
-':(exclude)node_modules/**' \
-':(exclude)vendor/**' \
-':(exclude)__pycache__/**' \
-':(exclude)*.generated.*' \
-':(exclude)*.g.dart' \
-':(exclude)*.freezed.dart' \
-':(exclude)convex/_generated/**' 2>/dev/null || \
-git diff --cached -- . \
+1. `git add -A`
+2. Then run both in parallel:
+   - `git status --short`
+   - `git diff --cached -- . \
 ':(exclude)*.lock' \
 ':(exclude)yarn.lock' \
 ':(exclude)package-lock.json' \
@@ -75,11 +46,14 @@ git diff --cached -- . \
 ':(exclude)*.freezed.dart' \
 ':(exclude)convex/_generated/**'`
 
+If `git diff --cached` returns empty output, there is nothing to commit — skip to Step 4 and report failure.
+
 ## Step 2 — Compose the commit message
 
 Arguments passed: `$ARGUMENTS`
 
 Check `$ARGUMENTS` for flags before composing:
+
 - contains `add-scope` → use format `<type>(<scope>): <title>` (infer scope from changed files)
 - contains `no-description` → omit the body bullets, title line only
 - no flags → use format `<type>: <title>` (no scope by default)
@@ -93,14 +67,14 @@ Format (with add-scope): `<type>(<scope>): <title>`
 
 **Title:** max 72 chars · imperative mood · no period · lowercase after colon
 
-**Body:** 2–5 lines using `•` · one blank line after title · each bullet = what changed + why · max 100 chars per bullet
+**Body:** 2–7 lines using `•` · one blank line after title · each bullet = what changed + why · max 100 chars per bullet
 
-## Step 3 — Stage and commit
+## Step 3 — Commit
 
-Use the message composed in Step 2. If `no-description` or `skip-all` was passed, omit the blank line and body from the commit message entirely.
+Use the message composed in Step 2. If `no-description` or `skip-all` was passed, omit the blank line and body from the commit message entirely. Use exactly the message from Step 2. Do not append any trailers, Co-Authored-By lines, or attributions.
 
 ```bash
-git add -A && git commit -m "$(cat <<'EOF'
+git commit -m "$(cat <<'EOF'
 <type>(<scope>): <title>
 
 <body>
