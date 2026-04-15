@@ -1,6 +1,7 @@
 ---
 name: handoff
 description: A slash command for Claude Code that generates a session handoff document when ending work. Use when the user wants to create a summary of work completed, document key decisions made during a session, capture pending issues and next steps, prepare context for future sessions or other developers, or update CLAUDE.md with learnings. Triggers on "/handoff" or phrases like "write a handoff", "create a session summary", "document what we did", "end session with notes".
+disable-model-invocation: true
 argument-hint: '[--update-claude-md] [--dated-folder] [--feedback]'
 ---
 
@@ -253,6 +254,7 @@ When `--feedback` is present, use the `AskUserQuestion` tool **three times seque
 Use exactly these calls:
 
 **Call 1 — Rating**
+
 ```
 question: "How would you rate this session?"
 header: "Rating"
@@ -264,6 +266,7 @@ options (4 max):
 ```
 
 **Call 2 — What worked well**
+
 ```
 question: "What worked well this session?"
 header: "Went well"
@@ -277,6 +280,7 @@ options (4 max, 3 dynamic + 1 fixed):
 ```
 
 **Call 3 — What to improve**
+
 ```
 question: "What could be improved for next time?"
 header: "Improve"
