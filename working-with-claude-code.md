@@ -4,6 +4,24 @@ A practical guide for building apps (Next.js, React, React Native, etc.) using C
 
 ---
 
+## Development Lifecycle at a Glance
+
+The table below is the full workflow from zero to shipped feature. Expand any phase for detailed steps.
+
+| Phase | What you do | Key command |
+| ----- | ----------- | ----------- |
+| **1. Project Setup** | Scaffold + git + CLAUDE.md | `/git-initial-setup commit-all` |
+| **1a. Stack Setup** | Install Convex + Clerk boilerplate *(Next.js + Convex + Clerk only)* | `/setup-next-convex-clerk` |
+| **1b. Existing Project** | Scan codebase, write CLAUDE.md | `/init` |
+| **2. Plan a Feature** | Design doc + plan before coding | `/design-doc`, `/plan` |
+| **3. Build** | Implement in slices, use plan mode for large changes | `/frontend-design`, `@file`, `shift+tab` |
+| **4. Commit** | Stage and write a clean commit message | `/git-commit` |
+| **5. Ongoing** | Memory, context hygiene, conventions | `#`, `/clear`, `/handoff` |
+
+Jump to the [Full New Project Checklist](#full-new-project-checklist) for a quick reference you can copy.
+
+---
+
 ## [Phase 1 — Starting a Brand New Project](#phase-1--starting-a-brand-new-project)
 
 <details>
@@ -41,6 +59,39 @@ Without `commit-all`, it only commits `.gitignore`.
 ---
 
 <details>
+<summary><h4>Step 2a — Set up Convex + Clerk <em>(Next.js + Convex + Clerk projects only)</em></h4><p>Run <code>/setup-next-convex-clerk</code> — scans the codebase, asks a few questions, installs packages, and scaffolds the full boilerplate in one shot</p></summary>
+
+**Why:** This skill handles the entire stack setup automatically — package installation, Convex schema and utilities, Clerk middleware and providers, custom hooks, and project rules in CLAUDE.md. Doing this by hand across 15+ files is tedious and error-prone.
+
+```
+/setup-next-convex-clerk
+```
+
+Claude will:
+1. Scan your project to detect what's already installed
+2. Ask a few focused questions (which features you want, public routes, user schema fields, extra tables)
+3. Install all missing packages in one command
+4. Create every boilerplate file — utilities, middleware, schema, hooks, providers
+5. Write Convex, Clerk, Next.js, and hook rules into `.claude/rules/`
+6. Append a `## Stack` section to `CLAUDE.md`
+7. Print a checklist of required next steps (Convex dashboard, Clerk dashboard, env vars)
+
+**Use this for:**
+- Brand new Next.js apps adding Convex + Clerk from scratch
+- Existing Next.js apps that have Clerk or Convex but are missing the boilerplate structure
+- Projects where the boilerplate already exists — it only creates what's missing
+
+**Skip this for:**
+- Projects not using Convex or Clerk
+- Projects where you've already run this skill and the boilerplate is in place
+
+> After setup, use the `fullstack-expert` agent for all feature development on this stack.
+
+</details>
+
+---
+
+<details>
 <summary><h4>Step 3 — Use <code>/init</code> to give Claude the full picture</h4><p>Use <code>#</code> to tell Claude your conventions first; run <code>/init</code> only after implementing a few real features</p></summary>
 
 Don't run `/init` immediately after scaffolding. At that point your project is 100% boilerplate — Claude already knows the default commands for Next.js, Expo, React Native, etc. Running `/init` this early produces a [`CLAUDE.md`](#splitting-a-large-claudemd) that just echoes things Claude already knows.
@@ -58,6 +109,29 @@ Each `#` line is saved to Claude's memory immediately and applied in every futur
 **When to run `/init`:** After you've built 1–2 real features. By then your project has actual structure, patterns, and conventions worth scanning — and [`CLAUDE.md`](#splitting-a-large-claudemd) becomes genuinely useful. Alternatively, write [`CLAUDE.md`](#splitting-a-large-claudemd) by hand — you know your own project better than Claude can infer from scanning.
 
 Read more: [Splitting a Large CLAUDE.md](#splitting-a-large-claudemd)
+
+</details>
+
+<details>
+<summary><h4>Step 4 — Configure the project level planDirectory configuration for claude</h4><p>, so that all the plans are stored in <code>./.claude/plans</code> folder</p></summary>
+
+By default, Claude Code stores plan files in `~/.claude/plans` (your home directory). Configure it to store them inside the project instead.
+
+Add this to `.claude/settings.json` at the project root (create the file if it doesn't exist):
+
+```json
+{
+  "plansDirectory": "./.claude/plans"
+}
+```
+
+**Why:** This scopes plans to the project and keeps them alongside your other Claude config. Future sessions and teammates working in the same repo will use the same plans directory.
+
+**Tip:** Add `.claude/plans/` to `.gitignore` if you don't want plan files committed to git.
+
+```
+echo ".claude/plans/" >> .gitignore
+```
 
 </details>
 
@@ -84,8 +158,7 @@ Read more: [Splitting a Large CLAUDE.md](#splitting-a-large-claudemd)
 
 ---
 
-<details>
-<summary><h4>Step C — Review and refine <code>CLAUDE.md</code></h4><p>Read the generated file, correct anything wrong, and add what Claude couldn't infer (conventions, decisions, gotchas)</p></summary>
+<details><summary><h4>Step C — Review and refine <code>CLAUDE.md</code></h4><p>Read the generated file, correct anything wrong, and add what Claude couldn't infer (conventions, decisions, gotchas)</p></summary>
 
 Claude infers what it can from code, but it cannot know:
 
@@ -226,6 +299,35 @@ Or just say: `"Think through this before writing any code"` — Claude will lay 
 ---
 
 <details>
+<summary><h4>Step 7a — Use <code>/frontend-design</code> for UI components and pages</h4><p>Run <code>/frontend-design</code> when building any non-trivial UI — Claude auto-detects your framework and styling setup before writing a single line</p></summary>
+
+**Why:** Claude scans your project for framework, styling method (Tailwind v3/v4, CSS Modules, CSS-in-JS), component library (shadcn/ui, Mantine, etc.), TypeScript, icon library, state management, and animation library before generating code. It adapts to your exact setup and produces production-grade, accessible, responsive output.
+
+```
+/frontend-design
+```
+
+Then describe the component or page you want — Claude states its chosen direction and implements it.
+
+**Use this for:**
+
+- New pages, layouts, and feature components
+- Dashboards, forms, landing sections
+- Any UI where you want production quality, not scaffolding
+
+**What it enforces automatically:**
+
+- Mobile-first responsive design
+- Accessibility (semantic HTML, ARIA, keyboard navigation, color contrast)
+- Performance (image optimization, font loading, no layout shift)
+- Dark mode with semantic color tokens
+- Loading and error states
+
+</details>
+
+---
+
+<details>
 <summary><h4>Step 8 — Prompt Claude to implement</h4><p>Reference the design doc with <code>@</code> and implement in small slices, not all at once</p></summary>
 
 Reference your design doc so Claude has full context:
@@ -354,6 +456,44 @@ You don't need to re-run `/init` — just edit the file directly.
 
 ---
 
+<details>
+<summary><h4>Step 15 — Generate a session handoff document</h4><p>Run <code>/handoff</code> at the end of any non-trivial session — captures completed work, dead ends, and next steps so you can pick up exactly where you left off</p></summary>
+
+**Why:** Long sessions accumulate context that gets lost when you close the window. The handoff document captures everything worth knowing — what was done, what failed and why, key decisions, pending issues, and clear next steps.
+
+```
+/handoff
+```
+
+Creates `handoffs/HANDOFF-{YYYY-MM-DD-HHMM}.md` automatically.
+
+**Optional flags:**
+
+| Flag | What it does |
+| ---- | ------------ |
+| `--update-claude` | Appends key learnings and known dead ends to `CLAUDE.md` so they persist into every future session |
+| `--dated-folder` | Groups handoffs by date into `handoffs/{YYYY-MM-DD}/` — useful when running multiple sessions per day |
+| `--feedback` | Asks you three questions (rating, what worked, what to improve) and adds a feedback section to the document |
+
+**To resume from a handoff at the start of your next session:**
+
+```
+Load handoffs/HANDOFF-2025-01-14-1430.md and continue from next steps
+```
+
+**Use this when:**
+
+- The session included non-trivial work you'll continue later
+- You hit dead ends that future-you (or a teammate) might retry
+- You made architectural decisions worth recording
+- You're handing off to another developer
+
+Read more: [`claude-handoff-guide.md`](./claude-handoff-guide.md)
+
+</details>
+
+---
+
 ## [Splitting a Large CLAUDE.md](#splitting-a-large-claudemd)
 
 As a project grows, `CLAUDE.md` can get long and hard to maintain. Claude Code lets you split it into focused files and import them with `@`.
@@ -439,12 +579,15 @@ This loads the database conventions only for that prompt, without making them a 
 ```
 [ ] Scaffold project (create-next-app, expo, etc.)
 [ ] /git-initial-setup commit-all
+[ ] /setup-next-convex-clerk           ← if using Next.js + Convex + Clerk
 [ ] Use # to tell Claude your conventions (run /init after a few real features)
 [ ] Write rough idea in plans/<feature-name>.md
 [ ] /design-doc plans/<feature-name>.md  →  review output
 [ ] /plan  (for large features)
 [ ] Implement in slices, referencing @design doc
+[ ] /frontend-design  (for UI components and pages)
 [ ] /git-commit  after each slice
+[ ] /handoff  at end of session
 [ ] Repeat from "Write rough idea" for next feature
 [ ] After 1-2 real features: /init  or  write CLAUDE.md by hand
 ```
@@ -456,7 +599,9 @@ This loads the database conventions only for that prompt, without making them a 
 [ ] /init  →  Claude scans the codebase and writes CLAUDE.md
 [ ] Review CLAUDE.md  →  fix errors, add conventions Claude couldn't infer
 [ ] Use # to save personal/session-specific notes that don't belong in CLAUDE.md
+[ ] /setup-next-convex-clerk  (if it's a Next.js + Convex + Clerk project missing the boilerplate)
 [ ] Continue from Phase 2 for any feature work
+[ ] /handoff  at end of session
 ```
 
 ---
@@ -465,14 +610,18 @@ This loads the database conventions only for that prompt, without making them a 
 
 **Your custom skills**
 
-| Command                         | When to use                                                              |
-| ------------------------------- | ------------------------------------------------------------------------ |
-| `/git-initial-setup`            | Once at project start — init git, create `.gitignore`, commit            |
-| `/git-initial-setup commit-all` | Same as above but also stages and commits all project files              |
-| `/git-commit`                   | After finishing a unit of work — stages everything and writes the commit |
-| `/git-commit add-scope`         | Same, but adds a scope to the commit e.g. `feat(auth): ...`              |
-| `/git-commit no-description`    | Same, but title-only — no bullet description in the commit body          |
-| `/design-doc <file>`            | Before coding a feature — turns a rough idea into a full design doc      |
+| Command                              | When to use                                                                            |
+| ------------------------------------ | -------------------------------------------------------------------------------------- |
+| `/git-initial-setup`                 | Once at project start — init git, create `.gitignore`, commit                          |
+| `/git-initial-setup commit-all`      | Same as above but also stages and commits all project files                            |
+| `/git-commit`                        | After finishing a unit of work — stages everything and writes the commit               |
+| `/git-commit add-scope`              | Same, but adds a scope to the commit e.g. `feat(auth): ...`                            |
+| `/git-commit no-description`         | Same, but title-only — no bullet description in the commit body                        |
+| `/design-doc <file>`                 | Before coding a feature — turns a rough idea into a full design doc                    |
+| `/frontend-design`                   | When building UI — auto-detects stack and produces accessible, responsive output       |
+| `/handoff`                           | End of session — captures work done, dead ends, decisions, and next steps              |
+| `/handoff --update-claude`           | Same, and also appends key learnings to CLAUDE.md for all future sessions              |
+| `/setup-next-convex-clerk`           | First-time setup of Next.js + Convex + Clerk — installs packages and scaffolds all files |
 
 **Built-in Claude Code**
 
@@ -484,3 +633,24 @@ This loads the database conventions only for that prompt, without making them a 
 | `shift+tab`       | When doing safe, repetitive work — skips permission prompts                   |
 | `# <instruction>` | To save a convention to Claude's memory so it applies every session           |
 | `@filename`       | To reference a specific file directly in your prompt                          |
+
+---
+
+## Reference Guides
+
+Deep-dive documentation for specific Claude Code features:
+
+| Guide | What it covers |
+| ----- | -------------- |
+| [`claude-code-best-practices.md`](./claude-code-best-practices.md) | Practical habits — prompt specificity, context hygiene, committing, reviewing diffs |
+| [`claude-md-guide.md`](./claude-md-guide.md) | CLAUDE.md hierarchy, `/init`, splitting into sections, what to put where |
+| [`claude-rules-guide.md`](./claude-rules-guide.md) | Path-scoped rules in `.claude/rules/` — when to use them vs. CLAUDE.md |
+| [`claude-agents-and-subagents.md`](./claude-agents-and-subagents.md) | Built-in agents, custom agent creation, tool restrictions, parallel and background execution |
+| [`claude-task-list-guide.md`](./claude-task-list-guide.md) | How the task list works, when to ask Claude to create tasks, pausing between steps |
+| [`claude-handoff-guide.md`](./claude-handoff-guide.md) | `/handoff` flags, document structure, the Dead Ends section, resuming from a handoff |
+| [`claude-background-tasks-guide.md`](./claude-background-tasks-guide.md) | Background execution, `Ctrl+B`, non-interactive mode (`-p`), parallel agents |
+| [`claude-batch-and-simplify-guide.md`](./claude-batch-and-simplify-guide.md) | Running multiple prompts without interaction; `/simplify` to clean up changed code |
+| [`claude-mcp-guide.md`](./claude-mcp-guide.md) | Connecting Claude to databases, GitHub, Sentry, and other external services via MCP |
+| [`claude-connectors-guide.md`](./claude-connectors-guide.md) | Scheduled task connectors (Slack, Gmail, Notion) — web-only, how they differ from MCP |
+| [`claude-add-dir-guide.md`](./claude-add-dir-guide.md) | Adding directories with glob filtering to Claude's context for monorepos and external folders |
+| [`sandbox-guide.md`](./sandbox-guide.md) | Sandbox mode — restricting Claude's file and network access, when to enable it |
