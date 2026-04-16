@@ -163,24 +163,26 @@ Record: `extra_user_fields`, `user_status_config` (`none`/`status`/`soft-delete`
 ## Phase 4 — Install Packages
 
 Detect the package manager first:
+
 ```bash
 ls pnpm-lock.yaml yarn.lock package-lock.json 2>/dev/null | head -1
 ```
+
 - `pnpm-lock.yaml` → `pnpm add`
 - `yarn.lock` → `yarn add`
 - otherwise → `npm install`
 
 Install only packages NOT already in `package.json`. Combine into as few commands as possible:
 
-| Package | When |
-|---|---|
-| `@clerk/nextjs` | `wants_clerk=true` AND NOT `has_clerk` |
-| `convex` | `wants_convex=true` AND NOT `has_convex` |
-| `http-status` | `wants_convex=true` AND NOT `has_http_status` |
-| `zod` | `wants_convex=true` AND NOT `has_zod` |
-| `react-hook-form @hookform/resolvers` | NOT `has_rhf` |
-| `date-fns` | not already installed |
-| `svix` | `wants_clerk=true` (for webhook verification) |
+| Package                               | When                                          |
+| ------------------------------------- | --------------------------------------------- |
+| `@clerk/nextjs`                       | `wants_clerk=true` AND NOT `has_clerk`        |
+| `convex`                              | `wants_convex=true` AND NOT `has_convex`      |
+| `http-status`                         | `wants_convex=true` AND NOT `has_http_status` |
+| `zod`                                 | `wants_convex=true` AND NOT `has_zod`         |
+| `react-hook-form @hookform/resolvers` | NOT `has_rhf`                                 |
+| `date-fns`                            | not already installed                         |
+| `svix`                                | `wants_clerk=true` (for webhook verification) |
 
 For ShadCN (`wants_shadcn=true` AND NOT `has_shadcn`): Run `npx shadcn@latest init`. If the terminal is non-interactive, skip and note it in the final report — the user must run it manually.
 
@@ -195,6 +197,7 @@ Read the skill base directory from the `<command-message>` header. Then read and
 ### Step 5.1 — Convex utilities (if `wants_convex=true` AND NOT `has_boilerplate`)
 
 Read `<base_dir>/ref/files/convex-utils.md`. Write each of the 6 files listed verbatim:
+
 1. `convex/utils/httpStatusCode.ts`
 2. `convex/types/common.ts`
 3. `convex/constants/pagination.ts`
@@ -207,10 +210,12 @@ Create all parent directories as needed.
 ### Step 5.2 — Convex middlewares (if `wants_convex=true` AND NOT `has_boilerplate`)
 
 Read `<base_dir>/ref/files/convex-middlewares.md`. Write both files:
+
 - `convex/utils/middlewares/convexMiddleware.ts`
 - `convex/utils/middlewares/convexPublicMiddleware.ts`
 
 **Adapt `convexMiddleware.ts` Step 2** based on `user_status_config`:
+
 - `none` → use Variant A: `if (!user?._id) { return notAuthorized(); }`
 - `status` → use Variant B: `if (!user?._id || user?.status !== 'active') { return notAuthorized(); }`
 - `soft-delete` → use Variant A + add: `if (!user?._id || user?.isDeleting) { return notAuthorized(); }`
@@ -219,10 +224,12 @@ Read `<base_dir>/ref/files/convex-middlewares.md`. Write both files:
 ### Step 5.3 — Convex user functions (if `wants_convex=true` AND NOT `has_user_functions`)
 
 Read `<base_dir>/ref/files/convex-users.md`. Write both files:
+
 - `convex/functions/users/users.utils.ts`
 - `convex/functions/users/internal.ts`
 
 **Adapt if `wants_file_storage=false`:**
+
 - In `internal.ts`: remove the `getConvexImageURL` import and call; return `userData` directly without the `image` computed field
 - In `users.utils.ts`: remove the `image` field from the spread return
 
@@ -233,21 +240,25 @@ If `has_convex_schema=false`, create `convex/schema.ts`. If it exists, read it a
 Build the `users` table with:
 
 **Always include:**
+
 ```ts
 email: v.string(),
 name: v.optional(v.string()),
 ```
 
 **Include only if `wants_file_storage=true`:**
+
 ```ts
 imageId: v.optional(v.id('_storage')),
 ```
 
 **Include based on `user_status_config`:**
+
 - `status` or `both`: `status: v.union(v.literal('active'), v.literal('suspended')),` (adapt values if user specified different ones)
 - `soft-delete` or `both`: `isDeleting: v.optional(v.boolean()),`
 
 **Add user's `extra_user_fields`** — map each to the correct Convex validator:
+
 - `string` → `v.string()`
 - `optional string` → `v.optional(v.string())`
 - `boolean` → `v.boolean()`
@@ -256,6 +267,7 @@ imageId: v.optional(v.id('_storage')),
 - union/enum (e.g. `"admin" | "user"`) → `v.union(v.literal("admin"), v.literal("user"))`
 
 **Always include index:**
+
 ```ts
 .index('by_email', ['email'])
 ```
@@ -267,6 +279,7 @@ For **`additional_tables`**: create each table with sensible fields based on the
 Read `<base_dir>/ref/files/clerk-integration.md`. Write the files:
 
 **`middleware.ts`** (if NOT `has_middleware`):
+
 - Replace `/* PUBLIC_ROUTES */` with the user's `extra_public_routes` list as string literals
 - Add `afterSignInUrl` and `afterSignOutUrl` if the user specified non-default values:
   ```ts
@@ -278,6 +291,7 @@ Read `<base_dir>/ref/files/clerk-integration.md`. Write the files:
   ```
 
 **`app/providers.tsx`** (if NOT `has_providers`):
+
 - If `wants_orgs=true`, add `afterSignInUrl` and `afterSignUpUrl` props to `<ClerkProvider>`:
   ```tsx
   <ClerkProvider afterSignInUrl="<after_sign_in_url>" afterSignUpUrl="<after_sign_up_url>">
@@ -288,6 +302,7 @@ Read `<base_dir>/ref/files/clerk-integration.md`. Write the files:
 Read the existing `app/layout.tsx`. Find the `{children}` in the return statement.
 
 If `<Providers>` is not already wrapping `{children}`:
+
 1. Add `import { Providers } from './providers';` to the imports
 2. Wrap `{children}` with `<Providers>{children}</Providers>`
 
@@ -296,6 +311,7 @@ Patch minimally — preserve all existing structure (fonts, metadata, html/body 
 ### Step 5.7 — Hooks (if `wants_convex=true` AND NOT `has_hooks`)
 
 Read `<base_dir>/ref/files/hooks.md`. Write all 4 files verbatim:
+
 - `hooks/convex/use-convex-query.ts`
 - `hooks/convex/use-convex-mutation.ts`
 - `hooks/convex/use-convex-action.ts`
@@ -313,12 +329,12 @@ Create `.claude/rules/` directory if it does not exist.
 
 For each rule file, read the ref file and write it verbatim to `.claude/rules/`. If the file already exists, read it first — append only if the content is not already there.
 
-| Read from | Write to |
-|---|---|
+| Read from                        | Write to                                                |
+| -------------------------------- | ------------------------------------------------------- |
 | `<base_dir>/ref/rules/convex.md` | `.claude/rules/convex.md` (only if `wants_convex=true`) |
-| `<base_dir>/ref/rules/hooks.md` | `.claude/rules/hooks.md` (only if `wants_convex=true`) |
-| `<base_dir>/ref/rules/nextjs.md` | `.claude/rules/nextjs.md` |
-| `<base_dir>/ref/rules/clerk.md` | `.claude/rules/clerk.md` (only if `wants_clerk=true`) |
+| `<base_dir>/ref/rules/hooks.md`  | `.claude/rules/hooks.md` (only if `wants_convex=true`)  |
+| `<base_dir>/ref/rules/nextjs.md` | `.claude/rules/nextjs.md`                               |
+| `<base_dir>/ref/rules/clerk.md`  | `.claude/rules/clerk.md` (only if `wants_clerk=true`)   |
 
 ### Step 6.2 — CLAUDE.md
 
