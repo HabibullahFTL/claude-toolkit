@@ -119,6 +119,27 @@ Edit `CLAUDE.md` directly to add or correct anything Claude missed.
 Always plan before asking Claude to code anything non-trivial. This prevents Claude from going in the wrong direction and wasting your time.
 
 <details>
+<summary><h4>Step 3b — Point the plans directory at your project folder</h4><p>Add <code>plansDirectory</code> to <code>.claude/settings.json</code> so plan files are stored inside your project, not in your home directory</p></summary>
+
+By default, Claude Code stores plan files in `~/.claude/plans` (your home directory). To keep them inside the project:
+
+Add this to `.claude/settings.json` at the project root (create the file if it doesn't exist):
+
+```json
+{
+  "plansDirectory": "./.claude/plans"
+}
+```
+
+This scopes plans to the project and keeps them alongside the rest of your Claude config. You can use any path relative to the project root — `./plans` is another common choice if you want them visible at the top level.
+
+**Tip:** Add `.claude/plans/` to `.gitignore` if you don't want plan files committed to git.
+
+</details>
+
+---
+
+<details>
 <summary><h4>Step 4 — Write a rough idea file</h4><p>Create a plain <code>.md</code> file in <code>plans/</code> describing what you want to build — no need for detail, just your thoughts</p></summary>
 
 ```
