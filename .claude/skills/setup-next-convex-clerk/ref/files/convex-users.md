@@ -45,6 +45,29 @@ export const getCurrentUser = async (
 
 ---
 
+## `convex/functions/users/index.ts`
+
+```ts
+import { query } from '../../_generated/server';
+import { z } from 'zod';
+import { convexMiddleware } from '../../utils/middlewares/convexMiddleware';
+import { generateConvexSuccessResponse } from '../../utils/common';
+import HttpStatusCodes from '../../utils/httpStatusCode';
+
+// [USER-FN]: Get the currently authenticated user.
+// currentUser is resolved by convexMiddleware — do not call getCurrentUser again.
+export const getCurrentUser = query(
+  convexMiddleware({
+    args: {},
+    zodSchema: z.object({}),
+    handler: async (_ctx, _args, currentUser) =>
+      generateConvexSuccessResponse(HttpStatusCodes.OK, 'User fetched.', currentUser),
+  }),
+);
+```
+
+---
+
 ## `convex/functions/users/internal.ts`
 
 ```ts

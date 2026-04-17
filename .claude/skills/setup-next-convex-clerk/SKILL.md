@@ -105,7 +105,7 @@ Skip any question for a package already detected — auto-set its flag to `true`
 
 Record: `wants_clerk`, `wants_convex`, `wants_shadcn`, `app_description`
 
-**If Scenario C:** Skip Batch A entirely. Go to Batch B and Batch C.
+**If Scenario C:** Skip Batch A entirely. Set `wants_clerk = has_clerk`, `wants_convex = has_convex`, and `wants_shadcn = has_shadcn` (answers are already known from the scan). If `has_shadcn=false`, still ask Call 3 (ShadCN question) — it cannot be derived from the scan. Then go to Batch B and Batch C.
 
 ---
 
@@ -243,8 +243,9 @@ Read `<base_dir>/ref/files/convex-middlewares.md`. Write both files:
 
 ### Step 5.3 — Convex user functions (if `wants_convex=true` AND NOT `has_user_functions`)
 
-Read `<base_dir>/ref/files/convex-users.md`. Write both files:
+Read `<base_dir>/ref/files/convex-users.md`. Write all 3 files:
 
+- `convex/functions/users/index.ts`
 - `convex/functions/users/users.utils.ts`
 - `convex/functions/users/internal.ts`
 
@@ -303,7 +304,7 @@ Read `<base_dir>/ref/files/clerk-integration.md`. Write the files:
 **`middleware.ts`** (if NOT `has_middleware`):
 
 - Replace `/* PUBLIC_ROUTES */` with the user's `extra_public_routes` list as string literals
-- Add `afterSignInUrl` and `afterSignOutUrl` if the user specified non-default values:
+- Add `afterSignInUrl` and `afterSignUpUrl` if the user specified non-default values:
   ```ts
   export default clerkMiddleware(async (auth, req) => {
     if (!isPublicRoute(req)) {
@@ -367,14 +368,16 @@ NEXT_PUBLIC_CLERK_FRONTEND_API_URL=https://<your-clerk-frontend-api-url>
 # Clerk redirect URLs
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/dashboard
-NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/dashboard
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=<after_sign_in_url>
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=<after_sign_up_url>
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=<after_sign_in_url>
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=<after_sign_up_url>
 
 # Clerk webhook — from Clerk dashboard → Webhooks → signing secret
 CLERK_WEBHOOK_SECRET=whsec_...
 ```
+
+Replace `<after_sign_in_url>` and `<after_sign_up_url>` with the actual values from Batch B (same substitution as Step 5.5; default `/dashboard`).
 
 Append only if `wants_file_storage=true`:
 ```
@@ -400,15 +403,16 @@ Read `<base_dir>/ref/files/convex-http-actions.md`. Apply sections in order:
 
 **[If wants_clerk=true] sections** — apply immediately after the file storage sections (or always sections if `wants_file_storage=false`):
 
-1. Write `convex/httpActions/clerk/clerk.httpActions.ts` verbatim.
+1. Write `convex/httpActions/clerk/clerk.httpActions.ts` verbatim (skip if `has_webhook_handler=true`).
 
-2. Append `upsertUserFromClerk` to `convex/functions/users/internal.ts`:
+2. Append `upsertUserFromClerk` and `deleteUserByClerkId` to `convex/functions/users/internal.ts` — read the file first; skip any mutation that is already present:
    - Add `internalMutation` to the existing import from `../../_generated/server`
-   - Append the mutation below `userByEmailInternal`
-   - **Adapt the `insert` payload** based on `user_status_config`:
+   - Append both mutations below `userByClerkIdInternal`
+   - **Adapt `upsertUserFromClerk` insert payload** based on `user_status_config`:
      - `status` or `both`: add `status: 'active' as const`
      - `soft-delete` or `both`: nothing — `isDeleting` is absent on new users by design
    - **Adapt for required `extra_user_fields`**: non-optional fields need a sensible insert default — `''` for string, `false` for boolean, `0` for number, first literal for union/enum. Add `// ⚠️ default for required field` comment next to each.
+   - **Do not adapt `deleteUserByClerkId`** — write it verbatim; deletion logic is intentionally left for the developer to implement.
 
 3. Patch `convex/httpActions/index.ts` per the ref file instructions (add import + populate `httpActionsHandlers`).
 
@@ -507,7 +511,7 @@ UPDATED:
 4. Register the Clerk webhook (the handler at /api/webhooks/clerk is already created):
    a) In Clerk dashboard → Webhooks, add an endpoint:
         URL: https://<your-deployment>.convex.site/api/webhooks/clerk
-        Events: user.created, user.updated
+        Events: user.created, user.updated, user.deleted
    b) Copy the signing secret → add to .env.local:
         CLERK_WEBHOOK_SECRET=whsec_...
    c) Add to Convex dashboard → Settings → Environment Variables:

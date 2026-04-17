@@ -94,7 +94,7 @@ export default clerkMiddleware(async (auth, req) => {
 
 User data syncs from Clerk to Convex via webhook (`/api/webhooks/clerk` → `convex/http.ts`). Never manually sync in components, mutations, or Server Components.
 
-Webhook events to subscribe to: `user.created`, `user.updated` (optionally `user.deleted`).
+Webhook events to subscribe to: `user.created`, `user.updated`, `user.deleted`.
 
 ## Required Environment Variables
 
@@ -108,10 +108,10 @@ NEXT_PUBLIC_CONVEX_URL=https://...                      # auto-written by npx co
 CLERK_WEBHOOK_SECRET=whsec_...                         # from Clerk dashboard → Webhooks
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/
-NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/dashboard
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
 ```
 
 Also add to Convex dashboard → Settings → Environment Variables:
