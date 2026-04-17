@@ -235,7 +235,7 @@ import {
 } from '@/convex/types/convex-types';
 import { OptionalRestArgsOrSkip, useQuery } from 'convex/react';
 import { DefaultFunctionArgs, FunctionReference } from 'convex/server';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type IQuery<TData, TArgs extends DefaultFunctionArgs> = FunctionReference<
   'query',
@@ -305,39 +305,38 @@ export const useConvexPaginatedQuery = <
     [result],
   );
 
-  const handleNextPage = () => {
+  const handleNextPage = useCallback(() => {
     if (meta?.cursor) {
-      setCursorStack((prev) => [...prev, currentCursor!]);
-      setCurrentCursor(meta?.cursor);
+      setCursorStack((prev) => [...prev, currentCursor]);
+      setCurrentCursor(meta.cursor);
     }
-  };
+  }, [meta?.cursor, currentCursor]);
 
-  const handlePrevPage = () => {
+  const handlePrevPage = useCallback(() => {
     const newStack = [...cursorStack];
     const prevCursor = newStack.pop(); // undefined = first page — do NOT coerce to ''
     setCursorStack(newStack);
     setCurrentCursor(prevCursor);
-  };
+  }, [cursorStack]);
 
-  const handleFirstPage = () => {
+  const handleFirstPage = useCallback(() => {
     setCursorStack([]);
-    setCurrentCursor('');
-  };
+    setCurrentCursor(undefined);
+  }, []);
 
-  const handleLimitChange = (value: number) => {
+  const handleLimitChange = useCallback((value: number) => {
     if (limit === value) return;
     setLimit(value);
     setCursorStack([]);
-    setCurrentCursor('');
-  };
+    setCurrentCursor(undefined);
+  }, [limit]);
 
-  const handleSortOrderChange = (value: string) => {
-    if (value === sortOrder || !defaultSortOrders.includes(value as ISortOrder))
-      return;
+  const handleSortOrderChange = useCallback((value: string) => {
+    if (value === sortOrder || !defaultSortOrders.includes(value as ISortOrder)) return;
     setSortOrder(value as ISortOrder);
     setCursorStack([]);
-    setCurrentCursor('');
-  };
+    setCurrentCursor(undefined);
+  }, [sortOrder]);
 
   return {
     data,

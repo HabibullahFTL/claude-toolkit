@@ -355,7 +355,38 @@ Read `<base_dir>/ref/files/hooks.md`. Write all 4 files verbatim:
 
 Create `hooks/convex/` directory if it does not exist.
 
-### Step 5.8 — HTTP Actions + Clerk webhook (if `wants_convex=true` AND NOT `has_http_router`)
+### Step 5.8 — `.env.local.example`
+
+Create `.env.local.example` at the project root (skip if it already exists). Include all env vars the project needs — omit actual secrets, use placeholder values only:
+
+```
+# Convex — auto-written to .env.local by: npx convex dev
+NEXT_PUBLIC_CONVEX_URL=https://<your-deployment>.convex.cloud
+
+# Clerk — from https://dashboard.clerk.com → API Keys
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
+NEXT_PUBLIC_CLERK_FRONTEND_API_URL=https://<your-clerk-frontend-api-url>
+
+# Clerk redirect URLs
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
+
+# Clerk webhook — from Clerk dashboard → Webhooks → signing secret
+CLERK_WEBHOOK_SECRET=whsec_...
+```
+
+Append only if `wants_file_storage=true`:
+```
+# Convex file storage — your deployment's HTTP site URL
+CONVEX_SITE_URL=https://<your-deployment>.convex.site
+```
+
+### Step 5.9 — HTTP Actions + Clerk webhook (if `wants_convex=true` AND NOT `has_http_router`)
 
 Read `<base_dir>/ref/files/convex-http-actions.md`. Apply sections in order:
 
@@ -488,7 +519,13 @@ UPDATED:
    [Only if using file storage:]
         CONVEX_SITE_URL=https://<your-deployment>.convex.site
 
-5. Run dev servers (two terminals):
+5. Create Clerk auth pages (if not already present):
+   ```
+   app/sign-in/[[...sign-in]]/page.tsx   → render <SignIn /> from '@clerk/nextjs'
+   app/sign-up/[[...sign-up]]/page.tsx   → render <SignUp /> from '@clerk/nextjs'
+   ```
+
+6. Run dev servers (two terminals):
      npx convex dev
      npm run dev
 ```
