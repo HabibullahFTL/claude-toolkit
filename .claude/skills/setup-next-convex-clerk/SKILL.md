@@ -13,9 +13,10 @@ This skill stores boilerplate in a `ref/` directory next to this file. The skill
 At the appropriate phase, read each ref file using the **Read** tool and write its contents to the user's project verbatim (with adaptations noted per phase). Ref file paths:
 
 ```
-<base_dir>/ref/files/convex-utils.md        → 6 utility files (httpStatusCode, types, constants, validations, convex-types, common)
+<base_dir>/ref/files/convex-utils.md           → 6 utility files (httpStatusCode, types, constants, validations, convex-types, common)
 <base_dir>/ref/files/convex-middlewares.md  → convexMiddleware + convexPublicMiddleware
 <base_dir>/ref/files/convex-users.md        → users.utils.ts + users/internal.ts
+<base_dir>/ref/files/convex-http-actions.md → HTTP actions scaffold + optional Clerk webhook handler (conditional sections)
 <base_dir>/ref/files/clerk-integration.md   → middleware.ts + app/providers.tsx
 <base_dir>/ref/files/hooks.md               → 4 custom Convex hooks
 <base_dir>/ref/rules/convex.md              → .claude/rules/convex.md content
@@ -40,6 +41,8 @@ Run these reads **in parallel**:
    - `convex/schema.ts`
    - `convex/utils/middlewares/convexMiddleware.ts`
    - `convex/functions/users/users.utils.ts`
+   - `convex/http.ts`
+   - `convex/httpActions/clerk/`
    - `middleware.ts`
    - `app/providers.tsx`
    - `app/layout.tsx`
@@ -65,6 +68,8 @@ has_providers:           app/providers.tsx exists
 has_boilerplate:         convex/utils/middlewares/convexMiddleware.ts exists
 has_user_functions:      convex/functions/users/users.utils.ts exists
 has_convex_schema:       convex/schema.ts exists
+has_http_router:         convex/http.ts exists
+has_webhook_handler:     convex/httpActions/clerk/ directory exists
 has_hooks:               hooks/convex/ directory exists
 has_claude_md:           CLAUDE.md exists
 has_rules_dir:           .claude/rules/ directory exists
@@ -214,12 +219,31 @@ Read `<base_dir>/ref/files/convex-middlewares.md`. Write both files:
 - `convex/utils/middlewares/convexMiddleware.ts`
 - `convex/utils/middlewares/convexPublicMiddleware.ts`
 
-**Adapt `convexMiddleware.ts` Step 2** based on `user_status_config`:
+**Adapt `convexMiddleware.ts` Step 2** based on `user_status_config`. Replace the comment + check block with the appropriate variant. `notAuthenticated()` returns 401; `notAuthorized()` returns 403:
 
-- `none` → use Variant A: `if (!user?._id) { return notAuthorized(); }`
-- `status` → use Variant B: `if (!user?._id || user?.status !== 'active') { return notAuthorized(); }`
-- `soft-delete` → use Variant A + add: `if (!user?._id || user?.isDeleting) { return notAuthorized(); }`
-- `both` → use Variant C: `if (!user?._id || user?.status !== 'active' || user?.isDeleting) { return notAuthorized(); }`
+- `none`:
+  ```ts
+  const user = await getCurrentUser(ctx);
+  if (!user?._id) return notAuthenticated();
+  ```
+- `status`:
+  ```ts
+  const user = await getCurrentUser(ctx);
+  if (!user?._id) return notAuthenticated();
+  if (user.status !== 'active') return notAuthorized();
+  ```
+- `soft-delete`:
+  ```ts
+  const user = await getCurrentUser(ctx);
+  if (!user?._id) return notAuthenticated();
+  if (user.isDeleting) return notAuthorized();
+  ```
+- `both`:
+  ```ts
+  const user = await getCurrentUser(ctx);
+  if (!user?._id) return notAuthenticated();
+  if (user.status !== 'active' || user.isDeleting) return notAuthorized();
+  ```
 
 ### Step 5.3 — Convex user functions (if `wants_convex=true` AND NOT `has_user_functions`)
 
@@ -242,6 +266,7 @@ Build the `users` table with:
 **Always include:**
 
 ```ts
+clerkId: v.string(),
 email: v.string(),
 name: v.optional(v.string()),
 ```
@@ -266,9 +291,10 @@ imageId: v.optional(v.id('_storage')),
 - `number` → `v.number()`
 - union/enum (e.g. `"admin" | "user"`) → `v.union(v.literal("admin"), v.literal("user"))`
 
-**Always include index:**
+**Always include indexes:**
 
 ```ts
+.index('by_clerkId', ['clerkId'])
 .index('by_email', ['email'])
 ```
 
@@ -318,6 +344,39 @@ Read `<base_dir>/ref/files/hooks.md`. Write all 4 files verbatim:
 - `hooks/convex/use-convex-paginated-query.ts`
 
 Create `hooks/convex/` directory if it does not exist.
+
+### Step 5.8 — HTTP Actions + Clerk webhook (if `wants_convex=true` AND NOT `has_http_router`)
+
+Read `<base_dir>/ref/files/convex-http-actions.md`. Apply sections in order:
+
+**[Always] sections** — write all 3 files verbatim:
+- `convex/httpActions/utils.httpActions.ts`
+- `convex/httpActions/index.ts`
+- `convex/http.ts`
+
+**[If wants_file_storage=true] sections** — apply after the always sections:
+
+1. Write `convex/httpActions/convexStorage/image.ts` verbatim.
+2. Patch `convex/httpActions/index.ts`: add the `convexStorageHttpActions` import and merge `convexStorage` into `httpActionsHandlers`.
+3. Patch `convex/http.ts`: add the `GET /convex/storage/get-image` route before `export default http;`.
+
+**[If wants_clerk=true] sections** — apply immediately after the file storage sections (or always sections if `wants_file_storage=false`):
+
+1. Write `convex/httpActions/clerk/clerk.httpActions.ts` verbatim.
+
+2. Append `upsertUserFromClerk` to `convex/functions/users/internal.ts`:
+   - Add `internalMutation` to the existing import from `../../_generated/server`
+   - Append the mutation below `userByEmailInternal`
+   - **Adapt the `insert` payload** based on `user_status_config`:
+     - `status` or `both`: add `status: 'active' as const`
+     - `soft-delete` or `both`: nothing — `isDeleting` is absent on new users by design
+   - **Adapt for required `extra_user_fields`**: non-optional fields need a sensible insert default — `''` for string, `false` for boolean, `0` for number, first literal for union/enum. Add `// ⚠️ default for required field` comment next to each.
+
+3. Patch `convex/httpActions/index.ts` per the ref file instructions (add import + populate `httpActionsHandlers`).
+
+4. Patch `convex/http.ts` per the ref file instructions (add the `/api/webhooks/clerk` route before `export default http`).
+
+If `convex/http.ts` already exists, skip this entire step — do not overwrite existing HTTP routing.
 
 ---
 
@@ -377,6 +436,11 @@ CREATED:
   hooks/convex/use-convex-mutation.ts
   hooks/convex/use-convex-action.ts
   hooks/convex/use-convex-paginated-query.ts
+  convex/httpActions/utils.httpActions.ts
+  convex/httpActions/index.ts                        [handlers registered based on config]
+  convex/httpActions/convexStorage/image.ts          [only if wants_file_storage]
+  convex/httpActions/clerk/clerk.httpActions.ts      [only if wants_clerk]
+  convex/http.ts                                     [GET /convex/storage/get-image if wants_file_storage | POST /api/webhooks/clerk if wants_clerk]
   .claude/rules/convex.md
   .claude/rules/hooks.md
   .claude/rules/nextjs.md
@@ -402,13 +466,16 @@ UPDATED:
 3. In Convex dashboard → Settings → Environment Variables, add:
      CLERK_JWT_ISSUER_DOMAIN=https://<your-clerk-frontend-api-url>
 
-4. In Clerk dashboard → Webhooks, add an endpoint:
-     URL: <your-convex-site-url>/api/webhooks/clerk
-     Events: user.created, user.updated
-   Copy the signing secret and add to .env.local:
-     CLERK_WEBHOOK_SECRET=whsec_...
-   [Only if using file storage — add to Convex env vars:]
-     CONVEX_SITE_URL=https://<your-deployment>.convex.site
+4. Register the Clerk webhook (the handler at /api/webhooks/clerk is already created):
+   a) In Clerk dashboard → Webhooks, add an endpoint:
+        URL: https://<your-deployment>.convex.site/api/webhooks/clerk
+        Events: user.created, user.updated
+   b) Copy the signing secret → add to .env.local:
+        CLERK_WEBHOOK_SECRET=whsec_...
+   c) Add to Convex dashboard → Settings → Environment Variables:
+        CLERK_WEBHOOK_SECRET=whsec_...
+   [Only if using file storage:]
+        CONVEX_SITE_URL=https://<your-deployment>.convex.site
 
 5. Run dev servers (two terminals):
      npx convex dev

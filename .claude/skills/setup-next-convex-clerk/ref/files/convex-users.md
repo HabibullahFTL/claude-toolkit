@@ -12,35 +12,34 @@ Write each file below to the exact path shown.
 
 ```ts
 import { internal } from '../../_generated/api';
-import { Doc } from '../../_generated/dataModel';
 import { ActionCtx, MutationCtx, QueryCtx } from '../../_generated/server';
+import { IUserWithImage } from '../../types/convex-types';
 
 // Get the currently authenticated user.
 // Called by convexMiddleware on every authenticated function invocation.
-// Queries users by email (standard Clerk/email auth).
-// For phone/SMS auth, replace email lookup with Clerk subject ID lookup.
+// Uses authUser.subject (Clerk's stable user ID) — survives email changes and multi-provider auth.
 export const getCurrentUser = async (
   ctx: QueryCtx | MutationCtx | ActionCtx,
-): Promise<Doc<'users'> | undefined> => {
+): Promise<IUserWithImage | undefined> => {
   const authUser = await ctx.auth.getUserIdentity();
-  const email = authUser?.email;
+  const clerkId = authUser?.subject;
 
-  if (!email) {
+  if (!clerkId) {
     return undefined; // No user logged in
   }
 
   const userData = await ctx.runQuery(
-    internal.functions.users.internal.userByEmailInternal,
-    { email },
+    internal.functions.users.internal.userByClerkIdInternal,
+    { clerkId },
   );
 
-  return userData
-    ? {
-        ...userData,
-        // Prefer user-uploaded image; fall back to auth provider's picture URL
-        image: userData?.image || authUser?.pictureUrl || '',
-      }
-    : undefined;
+  if (!userData) return undefined;
+
+  return {
+    ...userData,
+    // Prefer user-uploaded image; fall back to auth provider's picture URL
+    image: userData.image || authUser?.pictureUrl || '',
+  } satisfies IUserWithImage;
 };
 ```
 
@@ -55,15 +54,16 @@ import { internalQuery } from '../../_generated/server';
 import { getConvexImageURL } from '../../utils/common';
 
 // Internal query — not callable from the client, only from other Convex functions.
-// Looks up a user by email using the by_email index (must exist in schema.ts).
-export const userByEmailInternal = internalQuery({
+// Looks up a user by Clerk's stable subject ID using the by_clerkId index (must exist in schema.ts).
+// Using clerkId (not email) ensures lookup survives email changes and multi-provider auth.
+export const userByClerkIdInternal = internalQuery({
   args: {
-    email: v.string(),
+    clerkId: v.string(),
   },
-  handler: async (ctx, { email }) => {
+  handler: async (ctx, { clerkId }) => {
     const userData = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', email))
+      .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkId))
       .first();
 
     if (!userData) {

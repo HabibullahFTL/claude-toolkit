@@ -80,6 +80,7 @@ hooks/
 - `IConvexResponse<TData, TMeta>` — `{ success: true, statusCode, message, data, meta? }`
 - `IConvexErrorResponse` — `{ success: false, statusCode, message, errorSources? }`
 - `IConvexResult<TData, TMeta>` — union of both
-- `IUser` — `Doc<'users'>` (extends automatically with schema fields)
+- `IUser` — `Doc<'users'>` (raw schema row; extends automatically with schema fields)
+- `IUserWithImage` — `IUser & { image: string }` — the type of `currentUser` in middleware handlers
 - `ISortOrder` — `'asc' | 'desc'`
 - `Doc<'tableName'>` / `Id<'tableName'>` — from `convex/_generated/dataModel`

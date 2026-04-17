@@ -110,7 +110,7 @@ Always cast `Id<'table'>` — never use plain `z.string()` for document IDs.
 // ✅
 const user = await ctx.db
   .query('users')
-  .withIndex('by_email', (q) => q.eq('email', email))
+  .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkId))
   .unique();
 
 // ❌ Never
@@ -128,6 +128,46 @@ convex/functions/<domain>/
   <domain>.utils.ts  ← shared helpers for this domain
   internal.ts        ← internalQuery / internalMutation / internalAction
 ```
+
+## HTTP Actions
+
+`convex/http.ts` is a **route registry only** — no handler logic inline.
+
+```
+convex/
+  http.ts                                  ← routes only; import from httpActions/
+  httpActions/
+    utils.httpActions.ts                   ← CORS headers + JSON response builders
+    index.ts                               ← aggregates all handler groups
+    <domain>/<domain>.httpActions.ts       ← per-domain httpAction handlers
+```
+
+Response helpers for HTTP actions (use instead of bare `new Response`):
+
+```ts
+import {
+  successJsonResponseForHttpAction,
+  errorJsonResponseForHttpAction,
+  CORS_HEADERS,
+} from '../utils.httpActions';
+
+// Success
+return successJsonResponseForHttpAction(200, 'Done.', data);
+
+// Error
+return errorJsonResponseForHttpAction(400, 'Invalid input.');
+
+// CORS preflight (OPTIONS)
+return new Response(null, { status: 204, headers: CORS_HEADERS });
+```
+
+Always register an OPTIONS route for every path that receives cross-origin POST/PATCH/DELETE requests.
+
+Adding a new handler group:
+1. Create `convex/httpActions/<domain>/<domain>.httpActions.ts`
+2. Export an object of `httpAction(...)` handlers
+3. Import and add to `httpActionsHandlers` in `convex/httpActions/index.ts`
+4. Register routes in `convex/http.ts`
 
 ## Generated Files
 

@@ -54,7 +54,7 @@ Never import server-only Clerk helpers in `'use client'` files.
 ```ts
 // ✅ currentUser is injected by convexMiddleware
 handler: async (ctx, args, currentUser) => {
-  // currentUser is already Doc<'users'> — use it directly
+  // currentUser is IUserWithImage (Doc<'users'> + resolved image: string) — use it directly
   const items = await ctx.db
     .query('items')
     .withIndex('by_owner', (q) => q.eq('ownerId', currentUser._id))

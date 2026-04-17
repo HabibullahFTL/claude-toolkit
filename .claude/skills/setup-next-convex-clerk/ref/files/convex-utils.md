@@ -119,8 +119,12 @@ export type IConvexResult<TData = unknown, TMeta = unknown> =
   | IConvexResponse<TData, TMeta>
   | IConvexErrorResponse;
 
-// Extend with actual users table fields once schema.ts is defined
+// Matches the raw schema row — extend with actual users table fields once schema.ts is defined
 export type IUser = Doc<'users'>;
+
+// IUser extended with the resolved image URL computed by getCurrentUser.
+// Use this as the type for currentUser in middleware handlers — never Doc<'users'> directly.
+export type IUserWithImage = IUser & { image: string };
 ```
 
 ---

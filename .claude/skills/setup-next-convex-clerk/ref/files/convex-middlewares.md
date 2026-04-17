@@ -15,18 +15,22 @@ import { PropertyValidators } from 'convex/values';
 import { z } from 'zod';
 import { ActionCtx, MutationCtx, QueryCtx } from '../../_generated/server';
 import { getCurrentUser } from '../../functions/users/users.utils';
-import { IUser } from '../../types/convex-types';
+import { IUserWithImage } from '../../types/convex-types';
 import { generateConvexErrorResponse, handleConvexZodError } from '../common';
 import HttpStatusCodes from '../httpStatusCode';
 
-type IMiddlewareCurrentUser = IUser;
+type IMiddlewareCurrentUser = IUserWithImage;
 
-const notAuthorized = (isLoggedIn = false) =>
+const notAuthenticated = () =>
   generateConvexErrorResponse(
-    isLoggedIn ? HttpStatusCodes.FORBIDDEN : HttpStatusCodes.UNAUTHORIZED,
-    isLoggedIn
-      ? 'You are not authorized to perform this action.'
-      : 'Authentication required. Please log in to continue.',
+    HttpStatusCodes.UNAUTHORIZED,
+    'Authentication required. Please log in to continue.',
+  );
+
+const notAuthorized = () =>
+  generateConvexErrorResponse(
+    HttpStatusCodes.FORBIDDEN,
+    'You are not authorized to perform this action.',
   );
 
 export const convexMiddleware = <
@@ -57,21 +61,10 @@ export const convexMiddleware = <
       const parsed = zodSchema.safeParse(rawArgs);
       if (!parsed.success) return handleConvexZodError(parsed.error);
 
-      // ✅ Step 2: Validate current user
-      // ADAPT THIS CHECK — three variants depending on schema:
-      //
-      // Variant A — no status or soft-delete fields (default):
-      //   if (!user?._id) { return notAuthorized(); }
-      //
-      // Variant B — schema has a status field (e.g. status: 'active' | 'suspended'):
-      //   if (!user?._id || user?.status !== 'active') { return notAuthorized(); }
-      //
-      // Variant C — schema has status + soft-delete (isDeleting):
-      //   if (!user?._id || user?.status !== 'active' || user?.isDeleting) { return notAuthorized(); }
-      //
+      // ✅ Step 2: Validate current user — SKILL will replace this block based on user_status_config
       const user = await getCurrentUser(ctx);
       if (!user?._id) {
-        return notAuthorized();
+        return notAuthenticated();
       }
 
       // ✅ Step 3: Run business logic
