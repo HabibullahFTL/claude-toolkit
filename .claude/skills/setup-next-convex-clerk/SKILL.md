@@ -255,7 +255,7 @@ Read `<base_dir>/ref/files/convex-users.md`. Write both files:
 **Adapt if `wants_file_storage=false`:**
 
 - In `internal.ts`: remove the `getConvexImageURL` import and call; return `userData` directly without the `image` computed field
-- In `users.utils.ts`: remove the `image` field from the spread return
+- In `users.utils.ts`: change `image: userData.image || authUser?.pictureUrl || ''` to `image: authUser?.pictureUrl || ''` — the storage URL is gone but the Clerk picture fallback must stay; `IUserWithImage` requires `image: string`
 
 ### Step 5.4 — Schema (if `wants_convex=true`)
 
@@ -318,10 +318,20 @@ Read `<base_dir>/ref/files/clerk-integration.md`. Write the files:
 
 **`app/providers.tsx`** (if NOT `has_providers`):
 
-- If `wants_orgs=true`, add `afterSignInUrl` and `afterSignUpUrl` props to `<ClerkProvider>`:
-  ```tsx
-  <ClerkProvider afterSignInUrl="<after_sign_in_url>" afterSignUpUrl="<after_sign_up_url>">
-  ```
+- Write verbatim — no props needed on `<ClerkProvider>`; redirect URLs are set via env vars below.
+
+**`.env.local`** — append these Clerk redirect env vars (create the file if it doesn't exist):
+
+```
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=<after_sign_in_url>
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=<after_sign_up_url>
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=<after_sign_in_url>
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=<after_sign_up_url>
+```
+
+Replace `<after_sign_in_url>` and `<after_sign_up_url>` with the values the user gave in Batch B questions 3 and 4 (default: `/`).
 
 ### Step 5.6 — Update `app/layout.tsx`
 
@@ -350,6 +360,7 @@ Create `hooks/convex/` directory if it does not exist.
 Read `<base_dir>/ref/files/convex-http-actions.md`. Apply sections in order:
 
 **[Always] sections** — write all 3 files verbatim:
+
 - `convex/httpActions/utils.httpActions.ts`
 - `convex/httpActions/index.ts`
 - `convex/http.ts`
@@ -461,10 +472,10 @@ UPDATED:
    Copy your keys and add to .env.local:
      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
      CLERK_SECRET_KEY=sk_...
-     CLERK_JWT_ISSUER_DOMAIN=https://<your-clerk-frontend-api-url>
+     NEXT_PUBLIC_CLERK_FRONTEND_API_URL=https://<your-clerk-frontend-api-url>
 
 3. In Convex dashboard → Settings → Environment Variables, add:
-     CLERK_JWT_ISSUER_DOMAIN=https://<your-clerk-frontend-api-url>
+     NEXT_PUBLIC_CLERK_FRONTEND_API_URL=https://<your-clerk-frontend-api-url>
 
 4. Register the Clerk webhook (the handler at /api/webhooks/clerk is already created):
    a) In Clerk dashboard → Webhooks, add an endpoint:

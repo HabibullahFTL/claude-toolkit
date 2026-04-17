@@ -76,7 +76,7 @@ export const convexPaginationQueryZodSchema = z.object({
 // Intentionally NOT extended from convexPaginationQueryZodSchema —
 // `search` is a request field, not a response field.
 export const convexResponseMetaZodSchema = z.object({
-  cursor: z.string().optional(),     // continueCursor from .paginate(); absent on last page
+  cursor: z.string().optional(), // continueCursor from .paginate(); absent on last page
   isLastPage: z.boolean(),
   limit: z.coerce.number().optional().default(Number(DEFAULT_PAGE_LIMIT)),
   sortOrder: sortOrderZodSchema,
@@ -170,6 +170,19 @@ export function generateConvexErrorResponse(
 // Converts a ZodError into a structured error envelope
 export function handleConvexZodError(error: ZodError): IConvexErrorResponse {
   const issues = error.issues ?? [];
+  if (!issues.length) {
+    return {
+      success: false,
+      statusCode: HttpStatusCodes.BAD_REQUEST,
+      message: 'Invalid input.',
+      errorSources: [
+        {
+          path: '',
+          message: 'Invalid input.',
+        },
+      ],
+    };
+  }
   const errorSources = issues.map((issue) => ({
     path: String(issue.path[issue.path.length - 1] ?? ''),
     message: issue.message,
@@ -194,7 +207,9 @@ export function getConvexImageURL(storageId?: Id<'_storage'>): string {
   if (!storageId || !process.env.CONVEX_SITE_URL) {
     return '';
   }
-  const url = new URL(`${process.env.CONVEX_SITE_URL}/convex/storage/get-image`);
+  const url = new URL(
+    `${process.env.CONVEX_SITE_URL}/convex/storage/get-image`,
+  );
   url.searchParams.set('storageId', storageId);
   return url.href;
 }

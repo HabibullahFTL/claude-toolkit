@@ -88,9 +88,15 @@ export function useConvexMutation<
   const onSuccessRef = useRef(options?.onSuccess);
   const onErrorRef = useRef(options?.onError);
   const onSettledRef = useRef(options?.onSettled);
-  useEffect(() => { onSuccessRef.current = options?.onSuccess; }, [options?.onSuccess]);
-  useEffect(() => { onErrorRef.current = options?.onError; }, [options?.onError]);
-  useEffect(() => { onSettledRef.current = options?.onSettled; }, [options?.onSettled]);
+  useEffect(() => {
+    onSuccessRef.current = options?.onSuccess;
+  }, [options?.onSuccess]);
+  useEffect(() => {
+    onErrorRef.current = options?.onError;
+  }, [options?.onError]);
+  useEffect(() => {
+    onSettledRef.current = options?.onSettled;
+  }, [options?.onSettled]);
 
   const reset = useCallback(() => {
     setState(makeInitialState<TReturn>());
@@ -166,9 +172,15 @@ export function useConvexAction<
   const onSuccessRef = useRef(options?.onSuccess);
   const onErrorRef = useRef(options?.onError);
   const onSettledRef = useRef(options?.onSettled);
-  useEffect(() => { onSuccessRef.current = options?.onSuccess; }, [options?.onSuccess]);
-  useEffect(() => { onErrorRef.current = options?.onError; }, [options?.onError]);
-  useEffect(() => { onSettledRef.current = options?.onSettled; }, [options?.onSettled]);
+  useEffect(() => {
+    onSuccessRef.current = options?.onSuccess;
+  }, [options?.onSuccess]);
+  useEffect(() => {
+    onErrorRef.current = options?.onError;
+  }, [options?.onError]);
+  useEffect(() => {
+    onSettledRef.current = options?.onSettled;
+  }, [options?.onSettled]);
 
   const reset = useCallback(() => {
     setState(makeInitialState<TReturn>());
@@ -223,7 +235,7 @@ import {
 } from '@/convex/types/convex-types';
 import { OptionalRestArgsOrSkip, useQuery } from 'convex/react';
 import { DefaultFunctionArgs, FunctionReference } from 'convex/server';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type IQuery<TData, TArgs extends DefaultFunctionArgs> = FunctionReference<
   'query',
@@ -259,6 +271,12 @@ export const useConvexPaginatedQuery = <
   const [cursorStack, setCursorStack] = useState<(string | undefined)[]>([]);
   const [currentCursor, setCurrentCursor] = useState<string>();
 
+  // Reset to page 1 whenever search changes — stale cursors would fetch the wrong page
+  useEffect(() => {
+    setCursorStack([]);
+    setCurrentCursor(undefined);
+  }, [search]);
+
   const result = useQuery(
     query,
     ...([
@@ -277,7 +295,10 @@ export const useConvexPaginatedQuery = <
     [result],
   );
 
-  const data = useMemo(() => successResult?.data ?? [], [successResult]) as TData;
+  const data = useMemo(
+    () => successResult?.data ?? [],
+    [successResult],
+  ) as TData;
   const meta = useMemo(() => successResult?.meta, [successResult]);
   const error = useMemo(
     () => (result && result.success === false ? result : undefined),
@@ -311,7 +332,8 @@ export const useConvexPaginatedQuery = <
   };
 
   const handleSortOrderChange = (value: string) => {
-    if (value === sortOrder || !defaultSortOrders.includes(value as ISortOrder)) return;
+    if (value === sortOrder || !defaultSortOrders.includes(value as ISortOrder))
+      return;
     setSortOrder(value as ISortOrder);
     setCursorStack([]);
     setCurrentCursor('');

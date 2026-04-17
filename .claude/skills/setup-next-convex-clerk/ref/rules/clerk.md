@@ -7,9 +7,9 @@ globs: middleware.ts,app/**/*.ts,app/**/*.tsx,hooks/**/*.ts,convex/functions/**/
 
 ## auth() vs currentUser()
 
-| Function | When to use | Cost |
-|---|---|---|
-| `auth()` | Need only `userId` to check auth or verify identity | Fast — no external call |
+| Function        | When to use                                            | Cost                         |
+| --------------- | ------------------------------------------------------ | ---------------------------- |
+| `auth()`        | Need only `userId` to check auth or verify identity    | Fast — no external call      |
 | `currentUser()` | Need full Clerk profile (name, email, avatar) directly | Slow — external network call |
 
 **Always prefer the Convex `users` table** over `currentUser()` for profile data. The data is synced via webhook, faster, and works offline.
@@ -24,18 +24,23 @@ const user = await currentUser();
 
 // ✅ User profile in components — always prefer this
 import useConvexQuery from '@/hooks/convex/use-convex-query';
-const { data: user } = useConvexQuery(api.functions.users.index.getCurrentUser, {});
+const { data: user } = useConvexQuery(
+  api.functions.users.index.getCurrentUser,
+  {},
+);
 ```
 
 ## Server vs Client Imports
 
 **Server Components / Route Handlers / Convex functions:**
+
 ```ts
 import { auth, currentUser } from '@clerk/nextjs/server';
 const { userId } = await auth();
 ```
 
 **Client Components:**
+
 ```tsx
 'use client';
 import { useUser, useAuth, useClerk } from '@clerk/nextjs';
@@ -59,12 +64,12 @@ handler: async (ctx, args, currentUser) => {
     .query('items')
     .withIndex('by_owner', (q) => q.eq('ownerId', currentUser._id))
     .collect();
-}
+};
 
 // ❌ Never re-fetch inside handler
 handler: async (ctx, args, currentUser) => {
   const user = await getCurrentUser(ctx); // redundant
-}
+};
 ```
 
 ## Middleware
@@ -94,15 +99,23 @@ Webhook events to subscribe to: `user.created`, `user.updated` (optionally `user
 ## Required Environment Variables
 
 Add to `.env.local`:
+
 ```
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
 CLERK_SECRET_KEY=sk_...
-CLERK_JWT_ISSUER_DOMAIN=https://<your-clerk-frontend-api-url>
-NEXT_PUBLIC_CONVEX_URL=https://...          # auto-written by npx convex dev
-CLERK_WEBHOOK_SECRET=whsec_...             # from Clerk dashboard → Webhooks
+NEXT_PUBLIC_CLERK_FRONTEND_API_URL=https://<your-clerk-frontend-api-url>
+NEXT_PUBLIC_CONVEX_URL=https://...                      # auto-written by npx convex dev
+CLERK_WEBHOOK_SECRET=whsec_...                         # from Clerk dashboard → Webhooks
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
 ```
 
 Also add to Convex dashboard → Settings → Environment Variables:
+
 ```
-CLERK_JWT_ISSUER_DOMAIN=https://<your-clerk-frontend-api-url>
+NEXT_PUBLIC_CLERK_FRONTEND_API_URL=https://<your-clerk-frontend-api-url>
 ```
