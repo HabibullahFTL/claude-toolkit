@@ -85,24 +85,25 @@ has_rules_dir:           .claude/rules/ directory exists
 
 ## Phase 1 — Batch A: Core Stack Questions
 
-Ask **one** AskUserQuestion call with all applicable items. Skip items that are already installed.
+Skip any question for a package already detected — auto-set its flag to `true`. Show the scan summary in the first question. Ask each as its own AskUserQuestion call:
 
-```
-I've scanned your project. Here's what I found:
-[Brief bullet list — e.g. "✅ Next.js 15 | ❌ Clerk not installed | ❌ Convex not installed | ✅ Tailwind CSS"]
+**Call 1 — Clerk** (skip if `has_clerk=true`, auto-set `wants_clerk=true`):
+- question: `"I've scanned your project. Here's what I found:\n[brief bullet list — e.g. ✅ Next.js 15 | ❌ Clerk | ❌ Convex | ✅ Tailwind]\n\n🔐 Will you use Clerk for authentication?"`
+- options: `["Yes", "No"]`
 
-Please answer these to continue:
+**Call 2 — Convex** (skip if `has_convex=true`, auto-set `wants_convex=true`):
+- question: `"🗄️ Will you use Convex as your real-time backend/database?"`
+- options: `["Yes", "No"]`
 
-[Include only lines that apply:]
-1. 🔐 Clerk — Will you use Clerk for authentication? (yes / no)
-2. 🗄️  Convex — Will you use Convex as your real-time backend/database? (yes / no)
-3. 🎨 ShadCN/UI — Will you use ShadCN/UI for components? (yes / no)
-4. 📝 App — Briefly describe what this app does. (One line — helps design schema and rules)
-```
+**Call 3 — ShadCN/UI** (skip if `has_shadcn=true`, auto-set `wants_shadcn=true`):
+- question: `"🎨 Will you use ShadCN/UI for components?"`
+- options: `["Yes", "No"]`
+
+**Call 4 — App description** (always ask):
+- question: `"📝 Briefly describe what this app does. (One line — helps design the schema and rules.)"`
+- (no options — free text)
 
 Record: `wants_clerk`, `wants_convex`, `wants_shadcn`, `app_description`
-
-If already installed, set `wants_clerk=true` / `wants_convex=true` automatically without asking.
 
 **If Scenario C:** Skip Batch A entirely. Go to Batch B and Batch C.
 
@@ -110,24 +111,25 @@ If already installed, set `wants_clerk=true` / `wants_convex=true` automatically
 
 ## Phase 2 — Batch B: Clerk Questions
 
-**Only ask if `wants_clerk=true`.** One AskUserQuestion call.
+**Only ask if `wants_clerk=true`.** Ask each as its own AskUserQuestion call:
 
-```
-A few Clerk-specific questions:
+**Call 1 — Public routes** (free text):
+- question: `"🔓 Which routes should be accessible without login?\nAlready included: /, /sign-in(.*), /sign-up(.*), /api/webhooks(.*)\nList any extra paths (e.g. /about /pricing /blog), or leave blank for none."`
+- (no options — free text)
 
-1. 🔓 Public routes — Which routes should be accessible WITHOUT login?
-   Already included by default: /, /sign-in, /sign-up, /api/webhooks
-   List any extra paths (e.g. /about, /pricing, /blog) — or type "none".
+**Call 2 — Organizations**:
+- question: `"🏢 Does your app need Clerk Organizations (multi-tenant support)?\nMost apps don't — select No if unsure."`
+- options: `["Yes", "No"]`
 
-2. 🏢 Clerk Organizations — Does your app need multi-tenant organization support? (yes / no)
-   (Most apps don't — answer "no" if unsure)
+**Call 3 — After sign-in URL**:
+- question: `"↩️ Where should users land after signing in?"`
+- options: `["/dashboard", "/onboarding", "Other (type below)"]`
 
-3. ↩️  After sign-in — Where should users land after signing in?
-   Default: /dashboard — or specify a different path.
+**Call 4 — After sign-up URL**:
+- question: `"↩️ Where should users land after signing up?"`
+- options: `["/dashboard", "/onboarding", "Other (type below)"]`
 
-4. ↩️  After sign-up — Where should users land after signing up?
-   Default: /dashboard — or specify a different path (often /onboarding for new users).
-```
+For Calls 3 and 4: if the user selects "Other (type below)", use their typed value as the URL. If they select a listed path, use that value directly. Default to `/dashboard` if nothing is provided.
 
 Record: `extra_public_routes` (list), `wants_orgs` (bool), `after_sign_in_url`, `after_sign_up_url`
 
@@ -135,31 +137,25 @@ Record: `extra_public_routes` (list), `wants_orgs` (bool), `after_sign_in_url`, 
 
 ## Phase 3 — Batch C: Convex Questions
 
-**Only ask if `wants_convex=true`.** One AskUserQuestion call.
+**Only ask if `wants_convex=true`.** Ask each as its own AskUserQuestion call:
 
-```
-A few Convex-specific questions:
+**Call 1 — Extra user fields** (free text):
+- question: `"👤 Beyond the defaults (email, name, imageId), what extra fields do your users need?\nExamples:\n  role: \"admin\" | \"user\"\n  plan: \"free\" | \"pro\" | \"enterprise\"\n  onboardingComplete: boolean\n  bio: string (optional)\nList them with types, or type \"none\" for defaults only."`
+- (no options — free text)
 
-1. 👤 Extra user fields — Beyond the defaults (email, name, imageId), what extra fields do your users need?
-   Examples:
-     role: "admin" | "user"
-     plan: "free" | "pro" | "enterprise"
-     onboardingComplete: boolean
-     bio: string (optional)
-   → List them with types, or type "none" for defaults only.
+**Call 2 — User status / soft-delete**:
+- question: `"🔄 Does your users table need a status or soft-delete field?\n• Status only — adds status: \"active\" | \"suspended\" (gates middleware access)\n• Soft-delete only — adds isDeleting: boolean\n• Both — adds both fields\n• None — no extra fields"`
+- options: `["None", "Status only", "Soft-delete only", "Both"]`
 
-2. 🔄 User status / soft-delete — Does your users table need:
-   a) A status field (e.g. "active" | "suspended") that gates access?
-   b) A soft-delete field (e.g. isDeleting: boolean)?
-   → Answer "a", "b", "both", or "none". This affects the auth middleware logic.
+Map to `user_status_config`: `None → none`, `Status only → status`, `Soft-delete only → soft-delete`, `Both → both`.
 
-3. 🗃️  Additional tables — What other data tables do you know you'll need?
-   Example: posts (title, content, authorId, status: "published" | "draft")
-   → Describe each, or type "none".
+**Call 3 — Additional tables** (free text):
+- question: `"🗃️ What other data tables do you know you'll need?\nExample: posts (title, content, authorId, status: \"published\" | \"draft\")\nDescribe each, or type \"none\"."`
+- (no options — free text)
 
-4. 🖼️  File storage — Does this app need Convex file storage for uploads (avatars, images, etc.)?
-   (yes / no — if "no", imageId is removed from the users table)
-```
+**Call 4 — File storage**:
+- question: `"🖼️ Does this app need Convex file storage for uploads (avatars, images, etc.)?\nSelecting No removes imageId from the users table."`
+- options: `["Yes", "No"]`
 
 Record: `extra_user_fields`, `user_status_config` (`none`/`status`/`soft-delete`/`both`), `additional_tables`, `wants_file_storage`
 
@@ -331,7 +327,7 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=<after_sign_in_url>
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=<after_sign_up_url>
 ```
 
-Replace `<after_sign_in_url>` and `<after_sign_up_url>` with the values the user gave in Batch B questions 3 and 4 (default: `/`).
+Replace `<after_sign_in_url>` and `<after_sign_up_url>` with the values the user gave in Batch B questions 3 and 4 (default: `/dashboard`).
 
 ### Step 5.6 — Update `app/layout.tsx`
 
@@ -371,10 +367,10 @@ NEXT_PUBLIC_CLERK_FRONTEND_API_URL=https://<your-clerk-frontend-api-url>
 # Clerk redirect URLs
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/
-NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/dashboard
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
 
 # Clerk webhook — from Clerk dashboard → Webhooks → signing secret
 CLERK_WEBHOOK_SECRET=whsec_...

@@ -154,7 +154,7 @@ export const clerkHttpActions = {
 
 ## [If wants_clerk=true] Append to `convex/functions/users/internal.ts`
 
-Read the existing file. Add `internalMutation` to the import from `../../_generated/server` if not already present. Append below `userByEmailInternal`:
+Read the existing file. Add `internalMutation` to the import from `../../_generated/server` if not already present. Append below `userByClerkIdInternal`:
 
 ```ts
 // [INTERNAL-FN]: Upsert user from Clerk webhook (user.created / user.updated)

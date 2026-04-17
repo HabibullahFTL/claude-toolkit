@@ -54,7 +54,7 @@ Never import server-only Clerk helpers in `'use client'` files.
 
 `convexMiddleware` automatically calls `getCurrentUser` before every authenticated function. You receive `currentUser` as the **third argument** to the handler — never call `getCurrentUser` again inside the handler.
 
-`getCurrentUser` queries the `users` table by **email** (from `ctx.auth.getUserIdentity()`). The `users` table must have a `by_email` index.
+`getCurrentUser` queries the `users` table by **clerkId** (`authUser.subject` from `ctx.auth.getUserIdentity()`). The `users` table must have a `by_clerkId` index. Using `subject` (not email) ensures lookup survives email changes and multi-provider auth.
 
 ```ts
 // ✅ currentUser is injected by convexMiddleware

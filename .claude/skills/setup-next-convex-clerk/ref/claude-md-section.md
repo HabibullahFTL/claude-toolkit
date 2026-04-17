@@ -38,7 +38,7 @@ convex/
     users/
       index.ts          ← public queries/mutations
       users.utils.ts    ← getCurrentUser helper
-      internal.ts       ← internalQuery (userByEmailInternal)
+      internal.ts       ← internalQuery (userByClerkIdInternal)
     <domain>/
       index.ts
       <domain>.utils.ts
